@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+<title>Alcove Vendor Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: register header → status strip → filter bar → vendor table (cards on phones) → slide-over form */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --surface-2:#e9eeec; --line:#d5dddb;
+  --ink:#16302b; --ink-2:#4c615c; --ink-3:#7a8b87;
+  --accent:#b8741a; --accent-ink:#ffffff; --accent-soft:#f6e8d3;
+  --ok:#2e7d4f; --ok-soft:#dcefe3; --warn:#9a6a00; --warn-soft:#f6ecc9; --bad:#b23a3a; --bad-soft:#f6dcdc;
+  --font-display:"Familjen Grotesk","Segoe UI",system-ui,sans-serif;
+  --font-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --radius:8px; --shadow:0 12px 40px rgba(16,40,35,.18);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1715; --surface:#16211e; --surface-2:#1d2a27; --line:#2b3a36;
+  --ink:#e4ece9; --ink-2:#a9bab5; --ink-3:#768a85;
+  --accent:#e0a04a; --accent-ink:#1a1206; --accent-soft:#3a2c17;
+  --ok:#6cc790; --ok-soft:#1d3426; --warn:#e2bc55; --warn-soft:#352d14; --bad:#ef8a8a; --bad-soft:#3b1f1f;
+  --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1715; --surface:#16211e; --surface-2:#1d2a27; --line:#2b3a36;
+  --ink:#e4ece9; --ink-2:#a9bab5; --ink-3:#768a85;
+  --accent:#e0a04a; --accent-ink:#1a1206; --accent-soft:#3a2c17;
+  --ok:#6cc790; --ok-soft:#1d3426; --warn:#e2bc55; --warn-soft:#352d14; --bad:#ef8a8a; --bad-soft:#3b1f1f;
+  --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:flex;flex-direction:column;gap:20px}
+@media (max-width:520px){.wrap{padding-inline:16px}}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:2px solid var(--ink)}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.head h1{font-size:clamp(26px,4vw,36px);font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.head p{margin:4px 0 0;color:var(--ink-2);max-width:60ch}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:var(--radius);cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* status strip */
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+@media (max-width:700px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:2px;cursor:pointer;border:0;text-align:left}
+.stat:hover{background:var(--surface-2)}
+.stat.on{box-shadow:inset 0 -3px 0 var(--accent)}
+.stat .n{font-family:var(--font-display);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font-size:13px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--ink-3)}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.search{flex:1 1 260px;min-width:0;position:relative}
+.search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink-3)}
+.filters select{padding:9px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);flex:0 1 auto;min-width:0;max-width:100%}
+.count{font-size:13px;color:var(--ink-3);margin-left:auto;font-variant-numeric:tabular-nums}
+
+/* table */
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:500;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);cursor:pointer;user-select:none;white-space:nowrap}
+th .arr{opacity:.7}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+.vname{font-weight:600}
+.vsub{font-size:13px;color:var(--ink-3)}
+.mono{font-family:var(--font-mono);font-size:12.5px;letter-spacing:.02em}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.idle{background:var(--surface-2);color:var(--ink-2)}
+.stars{color:var(--accent);letter-spacing:1px;white-space:nowrap}
+.stars .off{color:var(--line)}
+.sample-tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:2px}
+
+/* cards on phones */
+.cards{display:none;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;width:100%}
+.card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.card-meta{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:13px;color:var(--ink-2)}
+@media (max-width:760px){.tablebox{display:none}.cards{display:flex}}
+
+/* empty */
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius);padding:40px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.empty h3{font-size:20px}
+.empty p{margin:0;color:var(--ink-2);max-width:52ch}
+.empty .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,20,18,.45);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--surface);z-index:21;box-shadow:var(--shadow);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.drawer-head h2{font-size:20px}
+.drawer-body{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:18px}
+.drawer-foot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;padding:14px 20px;border-top:1px solid var(--line)}
+.drawer-foot .r{display:flex;gap:8px;margin-left:auto}
+fieldset{border:0;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+legend{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px;grid-column:1/-1;padding:0}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.full{grid-column:1/-1}
+@media (max-width:460px){fieldset{grid-template-columns:1fr}}
+label{font-size:13px;font-weight:600;color:var(--ink-2)}
+label .req{color:var(--bad)}
+.f input,.f select,.f textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.f textarea{min-height:72px;resize:vertical}
+.f .hint{font-size:12px;color:var(--ink-3)}
+.f .err{font-size:12px;color:var(--bad)}
+.f input.bad{border-color:var(--bad)}
+.ratepick{display:flex;gap:4px}
+.ratepick button{border:1px solid var(--line);background:var(--bg);width:36px;height:34px;border-radius:6px;cursor:pointer;color:var(--ink-3);font-size:16px}
+.ratepick button.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+
+/* detail view */
+.dl{display:grid;grid-template-columns:140px minmax(0,1fr);gap:8px 14px;margin:0}
+.dl dt{font-size:13px;color:var(--ink-3)}
+.dl dd{margin:0;overflow-wrap:anywhere}
+.copy{border:0;background:none;color:var(--accent);cursor:pointer;font-size:12px;font-weight:600;padding:0 4px}
+.confirm{background:var(--bad-soft);border:1px solid var(--bad);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.confirm p{margin:0;color:var(--ink)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--radius);font-weight:600;z-index:30;box-shadow:var(--shadow)}
+.banner{background:var(--warn-soft);color:var(--ink);border:1px solid var(--warn);border-radius:var(--radius);padding:10px 14px;font-size:14px}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div>
+      <div class="eyebrow">Alcove Realty · Purchase Department</div>
+      <h1>Vendor Register</h1>
+      <p>Approved suppliers and contractors for site procurement. Search by material, filter by status, and keep GST and contact details in one place.</p>
+    </div>
+    <div class="head-actions">
+      <button class="btn" id="exportBtn" hidden>Export CSV</button>
+      <button class="btn primary" id="addBtn">+ Add vendor</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="strip" id="strip" aria-label="Vendor status summary">
+    <button class="stat" data-status="">
+      <span class="n" id="sTotal">–</span><span class="l">All vendors</span></button>
+    <button class="stat" data-status="Approved">
+      <span class="n" id="sOk">–</span><span class="l"><i class="dot ok"></i>Approved</span></button>
+    <button class="stat" data-status="Under evaluation">
+      <span class="n" id="sEval">–</span><span class="l"><i class="dot warn"></i>Under evaluation</span></button>
+    <button class="stat" data-status="Blacklisted">
+      <span class="n" id="sBad">–</span><span class="l"><i class="dot bad"></i>Blacklisted</span></button>
+  </section>
+
+  <section class="filters" aria-label="Filters">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search name, material, contact, GSTIN, city…" aria-label="Search vendors">
+    </div>
+    <select id="fCat" aria-label="Category"></select>
+    <select id="fStatus" aria-label="Status">
+      <option value="">Any status</option><option>Approved</option><option>Under evaluation</option><option>Inactive</option><option>Blacklisted</option>
+    </select>
+    <select id="fCity" aria-label="City"></select>
+    <span class="count" id="count"></span>
+  </section>
+
+  <main id="list">
+    <div class="empty" id="loading"><h3>Loading the vendor register…</h3><p>Fetching vendors saved by your team.</p></div>
+  </main>
+</div>
+
+<div id="drawerRoot"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const CATEGORIES=["Cement","Steel / TMT","Ready-mix concrete","Aggregates & sand","Bricks & blocks","Electrical","Plumbing & sanitary","Tiles & stone","Paint & coatings","Waterproofing","Aluminium & glazing","Doors & hardware","Lifts & elevators","Fire fighting","HVAC","Civil contractor","Labour contractor","Interiors & furniture","Landscaping","Security & facility","Consultants","Other"];
+const STATUSES=["Approved","Under evaluation","Inactive","Blacklisted"];
+const PILL={"Approved":"ok","Under evaluation":"warn","Blacklisted":"bad","Inactive":"idle"};
+const GST_RE=/^[0-3][0-9][A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const PAN_RE=/^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const GST_STATES={"07":"Delhi","06":"Haryana","09":"Uttar Pradesh","08":"Rajasthan","27":"Maharashtra","29":"Karnataka","33":"Tamil Nadu","36":"Telangana","24":"Gujarat","19":"West Bengal","03":"Punjab","05":"Uttarakhand","23":"Madhya Pradesh","32":"Kerala","37":"Andhra Pradesh","04":"Chandigarh","02":"Himachal Pradesh","10":"Bihar","21":"Odisha","20":"Jharkhand","22":"Chhattisgarh","30":"Goa","01":"Jammu & Kashmir"};
+
+const SAMPLES=[
+ {name:"Shree Balaji Cement Traders",category:"Cement",materials:"OPC 53, PPC, white cement",contact:"Rakesh Gupta",phone:"98110 23456",email:"sales@example-balaji.in",city:"Gurugram",gstin:"06ABCPG1234K1Z5",pan:"ABCPG1234K",status:"Approved",rating:4,terms:"30 days credit",lastPo:"2026-09-18",notes:"Delivers within 48 hrs to Sector 89 site."},
+ {name:"Kamdhenu Steel Distributors",category:"Steel / TMT",materials:"Fe 550D TMT 8–32 mm, binding wire",contact:"Anil Mittal",phone:"98730 11223",email:"anil@example-ksd.in",city:"Delhi",gstin:"07AAFCK5678M1Z2",pan:"AAFCK5678M",status:"Approved",rating:5,terms:"Advance 50%, balance on delivery",lastPo:"2026-09-30",notes:"Mill test certificate with each lot."},
+ {name:"NCR Ready Mix",category:"Ready-mix concrete",materials:"M20–M40 RMC, pump hire",contact:"Sunil Yadav",phone:"99990 44556",email:"orders@example-ncrrmc.in",city:"Faridabad",gstin:"06AAGCN9012P1Z8",pan:"AAGCN9012P",status:"Under evaluation",rating:3,terms:"15 days credit",lastPo:"",notes:"Trial pour scheduled for tower B raft."},
+ {name:"Aqua Seal Waterproofing",category:"Waterproofing",materials:"Crystalline coating, APP membrane, terrace treatment",contact:"Neha Arora",phone:"98185 66778",email:"neha@example-aquaseal.in",city:"Noida",gstin:"09AAJFA3456Q1Z1",pan:"AAJFA3456Q",status:"Approved",rating:4,terms:"10-year warranty, 45 days credit",lastPo:"2026-07-02",notes:""},
+ {name:"Bright Line Electricals",category:"Electrical",materials:"FRLS wiring, MCB/DB, cable trays",contact:"Vikas Jain",phone:"98100 99887",email:"vikas@example-brightline.in",city:"Delhi",gstin:"07AAKPJ7890R1Z4",pan:"AAKPJ7890R",status:"Blacklisted",rating:1,terms:"",lastPo:"2025-11-12",notes:"Supplied non-ISI cable in Nov 2025. Do not issue POs."}
+].map(s=>({...s,sample:true}));
+
+const S={vendors:[],q:"",cat:"",status:"",city:"",sort:"name",dir:1,db:null,canWrite:true,loaded:false,drawer:null};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2400)}
+function stars(n){n=+n||0;return `<span class="stars" aria-label="${n} of 5">${"★".repeat(n)}<span class="off">${"★".repeat(5-n)}</span></span>`}
+function fmtDate(d){if(!d)return"—";const x=new Date(d+"T00:00:00");return isNaN(x)?d:x.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}
+
+/* filters */
+function fillSelects(){
+  const cats=new Set(CATEGORIES);S.vendors.forEach(v=>v.category&&cats.add(v.category));
+  $("fCat").innerHTML=`<option value="">All categories</option>`+[...cats].map(c=>`<option ${c===S.cat?"selected":""}>${esc(c)}</option>`).join("");
+  const cities=[...new Set(S.vendors.map(v=>(v.city||"").trim()).filter(Boolean))].sort();
+  $("fCity").innerHTML=`<option value="">All cities</option>`+cities.map(c=>`<option ${c===S.city?"selected":""}>${esc(c)}</option>`).join("");
+}
+function filtered(){
+  const q=S.q.toLowerCase().trim();
+  let r=S.vendors.filter(v=>(!S.cat||v.category===S.cat)&&(!S.status||v.status===S.status)&&(!S.city||(v.city||"").trim()===S.city)&&
+    (!q||[v.name,v.materials,v.contact,v.gstin,v.city,v.category,v.email,v.phone,v.notes].join(" ").toLowerCase().includes(q)));
+  const k=S.sort;
+  r.sort((a,b)=>{let x=a[k]??"",y=b[k]??"";if(k==="rating"){x=+x||0;y=+y||0;return (x-y)*S.dir}return String(x).localeCompare(String(y))*S.dir});
+  return r;
+}
+
+function render(){
+  const vs=S.vendors;
+  $("sTotal").textContent=vs.length;
+  $("sOk").textContent=vs.filter(v=>v.status==="Approved").length;
+  $("sEval").textContent=vs.filter(v=>v.status==="Under evaluation").length;
+  $("sBad").textContent=vs.filter(v=>v.status==="Blacklisted").length;
+  document.querySelectorAll(".stat").forEach(b=>b.classList.toggle("on",b.dataset.status===S.status));
+  $("fStatus").value=S.status;
+  $("addBtn").hidden=!S.canWrite;
+  const list=$("list");
+  if(!S.loaded){return}
+  if(!vs.length){
+    $("count").textContent="";
+    list.innerHTML=`<div class="empty"><h3>No vendors yet</h3>
+      <p>Vendors you add appear here with their category, GSTIN, contact and approval status. Everyone with access to this page sees the same register.</p>
+      <div class="row">${S.canWrite?`<button class="btn primary" data-act="add">+ Add your first vendor</button><button class="btn" data-act="samples">Load 5 sample vendors</button>`:""}</div></div>`;
+    return;
+  }
+  const r=filtered();
+  $("count").textContent=`${r.length} of ${vs.length} shown`;
+  const hasSamples=vs.some(v=>v.sample);
+  const sampleNote=hasSamples&&S.canWrite?`<div class="banner" style="margin-bottom:12px">Sample vendors are marked <span class="sample-tag">sample</span>. <button class="btn ghost" data-act="clearSamples" style="padding:2px 6px;color:var(--accent)">Remove samples</button></div>`:"";
+  if(!r.length){list.innerHTML=sampleNote+`<div class="empty"><h3>No vendors match these filters</h3><p>Try a different search term or clear the filters.</p><div class="row"><button class="btn" data-act="clear">Clear filters</button></div></div>`;return}
+  const col=(k,l)=>`<th data-sort="${k}">${l} <span class="arr">${S.sort===k?(S.dir>0?"▲":"▼"):""}</span></th>`;
+  const tag=v=>v.sample?`<span class="sample-tag">sample</span>`:"";
+  list.innerHTML=sampleNote+`<div class="tablebox"><table><thead><tr>${col("name","Vendor")}${col("category","Category")}${col("contact","Contact")}${col("city","City")}${col("gstin","GSTIN")}${col("rating","Rating")}${col("status","Status")}${col("lastPo","Last PO")}</tr></thead><tbody>
+  ${r.map(v=>`<tr data-id="${esc(v.id)}" tabindex="0">
+    <td><div class="vname">${esc(v.name)}${tag(v)}</div><div class="vsub">${esc(v.materials||"")}</div></td>
+    <td><span class="chip">${esc(v.category||"—")}</span></td>
+    <td>${esc(v.contact||"—")}<div class="vsub">${esc(v.phone||"")}</div></td>
+    <td>${esc(v.city||"—")}</td>
+    <td class="mono">${esc(v.gstin||"—")}</td>
+    <td>${stars(v.rating)}</td>
+    <td><span class="pill ${PILL[v.status]||"idle"}">${esc(v.status||"—")}</span></td>
+    <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(v.lastPo)}</td></tr>`).join("")}
+  </tbody></table></div>
+  <div class="cards">${r.map(v=>`<button class="card" data-id="${esc(v.id)}">
+    <div class="card-top"><div><div class="vname">${esc(v.name)}${tag(v)}</div><div class="vsub">${esc(v.materials||"")}</div></div><span class="pill ${PILL[v.status]||"idle"}">${esc(v.status||"—")}</span></div>
+    <div class="card-meta"><span class="chip">${esc(v.category||"—")}</span><span>${esc(v.city||"")}</span>${stars(v.rating)}</div>
+    <div class="card-meta"><span>${esc(v.contact||"")}</span><span>${esc(v.phone||"")}</span></div></button>`).join("")}</div>`;
+}
+
+/* drawer */
+function closeDrawer(){S.drawer=null;$("drawerRoot").innerHTML=""}
+function openDetail(id){
+  const v=S.vendors.find(x=>x.id===id);if(!v)return;
+  S.drawer={mode:"view",id};
+  const row=(l,val,copy)=>`<dt>${l}</dt><dd>${val||"—"}${copy&&val?` <button class="copy" data-copy="${esc(copy)}">Copy</button>`:""}</dd>`;
+  const st=v.gstin&&GST_STATES[v.gstin.slice(0,2)];
+  $("drawerRoot").innerHTML=`<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="${esc(v.name)}">
+    <div class="drawer-head"><div><div class="eyebrow">${esc(v.category||"Vendor")}</div><h2>${esc(v.name)}</h2></div><button class="btn ghost" data-act="close" aria-label="Close">✕</button></div>
+    <div class="drawer-body">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="pill ${PILL[v.status]||"idle"}">${esc(v.status)}</span>${stars(v.rating)}${v.sample?`<span class="sample-tag">sample</span>`:""}</div>
+      <dl class="dl">
+        ${row("Materials / scope",esc(v.materials))}
+        ${row("Contact person",esc(v.contact))}
+        ${row("Phone",esc(v.phone),v.phone)}
+        ${row("Email",esc(v.email),v.email)}
+        ${row("City",esc(v.city))}
+        ${row("Address",esc(v.address))}
+        ${row("GSTIN",v.gstin?`<span class="mono">${esc(v.gstin)}</span>${st?` <span class="vsub">· ${esc(st)}</span>`:""}`:"",v.gstin)}
+        ${row("PAN",v.pan?`<span class="mono">${esc(v.pan)}</span>`:"")}
+        ${row("Payment terms",esc(v.terms))}
+        ${row("Last PO",v.lastPo?fmtDate(v.lastPo):"")}
+        ${row("Notes",esc(v.notes).replace(/\n/g,"<br>"))}
+      </dl>
+      <div id="confirmBox"></div>
+    </div>
+    ${S.canWrite?`<div class="drawer-foot"><button class="btn danger" data-act="askDelete">Delete</button><div class="r"><button class="btn primary" data-act="edit">Edit vendor</button></div></div>`:""}
+  </aside>`;
+}
+function openForm(id){
+  const v=id?S.vendors.find(x=>x.id===id):{status:"Under evaluation",rating:0,category:""};
+  if(!v)return;
+  S.drawer={mode:"form",id:id||null,rating:+v.rating||0};
+  const inp=(k,l,o={})=>`<div class="f ${o.full?"full":""}"><label for="v_${k}">${l}${o.req?' <span class="req">*</span>':""}</label>
+    ${o.area?`<textarea id="v_${k}" name="${k}">${esc(v[k])}</textarea>`:`<input id="v_${k}" name="${k}" type="${o.type||"text"}" value="${esc(v[k])}" ${o.req?"required":""} ${o.ph?`placeholder="${o.ph}"`:""} ${o.mono?'style="font-family:var(--font-mono);text-transform:uppercase"':""}>`}
+    ${o.hint?`<span class="hint">${o.hint}</span>`:""}<span class="err" id="e_${k}"></span></div>`;
+  $("drawerRoot").innerHTML=`<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="${id?"Edit vendor":"Add vendor"}">
+    <div class="drawer-head"><h2>${id?"Edit vendor":"Add vendor"}</h2><button class="btn ghost" data-act="close" aria-label="Close">✕</button></div>
+    <form class="drawer-body" id="vform" novalidate>
+      <fieldset><legend>Company</legend>
+        ${inp("name","Vendor name",{req:true,full:true,ph:"e.g. Shree Balaji Cement Traders"})}
+        <div class="f"><label for="v_category">Category <span class="req">*</span></label><select id="v_category" name="category" required><option value="">Select…</option>${CATEGORIES.map(c=>`<option ${c===v.category?"selected":""}>${c}</option>`).join("")}</select><span class="err" id="e_category"></span></div>
+        <div class="f"><label for="v_status">Status</label><select id="v_status" name="status">${STATUSES.map(s=>`<option ${s===v.status?"selected":""}>${s}</option>`).join("")}</select></div>
+        ${inp("materials","Materials / scope of work",{full:true,ph:"e.g. OPC 53, PPC"})}
+      </fieldset>
+      <fieldset><legend>Contact</legend>
+        ${inp("contact","Contact person")}
+        ${inp("phone","Phone",{type:"tel",ph:"98XXX XXXXX"})}
+        ${inp("email","Email",{type:"email"})}
+        ${inp("city","City",{ph:"e.g. Gurugram"})}
+        ${inp("address","Address",{full:true})}
+      </fieldset>
+      <fieldset><legend>Tax & commercial</legend>
+        ${inp("gstin","GSTIN",{mono:true,hint:"15 characters, e.g. 06ABCPG1234K1Z5"})}
+        ${inp("pan","PAN",{mono:true,hint:"Filled from GSTIN if left blank"})}
+        ${inp("terms","Payment terms",{ph:"e.g. 30 days credit"})}
+        ${inp("lastPo","Last PO date",{type:"date"})}
+        <div class="f full"><label>Performance rating</label><div class="ratepick" id="ratepick">${[1,2,3,4,5].map(n=>`<button type="button" data-rate="${n}" class="${n<=S.drawer.rating?"on":""}" aria-label="${n} star">★</button>`).join("")}<button type="button" data-rate="0" class="btn ghost" style="width:auto;font-size:13px">Clear</button></div></div>
+        ${inp("notes","Notes",{area:true,full:true})}
+      </fieldset>
+    </form>
+    <div class="drawer-foot"><button class="btn" data-act="close">Cancel</button><div class="r"><button class="btn primary" id="saveBtn" data-act="save">${id?"Save changes":"Add vendor"}</button></div></div>
+  </aside>`;
+  $("v_name").focus();
+}
+
+async function save(){
+  const f=$("vform"),d={};
+  ["name","category","status","materials","contact","phone","email","city","address","gstin","pan","terms","lastPo","notes"].forEach(k=>d[k]=(f.elements[k].value||"").trim());
+  d.gstin=d.gstin.toUpperCase().replace(/\s/g,"");d.pan=d.pan.toUpperCase().replace(/\s/g,"");
+  if(!d.pan&&GST_RE.test(d.gstin))d.pan=d.gstin.slice(2,12);
+  d.rating=S.drawer.rating;
+  document.querySelectorAll("#vform .err").forEach(e=>e.textContent="");document.querySelectorAll("#vform .bad").forEach(e=>e.classList.remove("bad"));
+  const errs={};
+  if(!d.name)errs.name="Enter the vendor's name.";
+  if(!d.category)errs.category="Pick a category.";
+  if(d.gstin&&!GST_RE.test(d.gstin))errs.gstin="This GSTIN doesn't match the 15-character format.";
+  if(d.pan&&!PAN_RE.test(d.pan))errs.pan="PAN should look like ABCDE1234F.";
+  if(d.email&&!/^\S+@\S+\.\S+$/.test(d.email))errs.email="Check the email address.";
+  const dup=S.vendors.find(v=>v.id!==S.drawer.id&&d.gstin&&v.gstin===d.gstin);
+  if(dup)errs.gstin=`${dup.name} already uses this GSTIN.`;
+  if(Object.keys(errs).length){for(const k in errs){$("e_"+k).textContent=errs[k];$("v_"+k)?.classList.add("bad")}$("v_"+Object.keys(errs)[0])?.focus();return}
+  if(!S.db){toast("Saving isn't available in this view.");return}
+  const btn=$("saveBtn");btn.disabled=true;btn.textContent="Saving…";
+  try{
+    const now=new Date().toISOString();
+    if(S.drawer.id){const old=S.vendors.find(v=>v.id===S.drawer.id)||{};const {id,...rest}=old;await S.db.collection("vendors").doc(S.drawer.id).set({...rest,...d,sample:false,updatedAt:now});toast("Vendor updated")}
+    else{await S.db.collection("vendors").add({...d,sample:false,createdAt:now,updatedAt:now});toast("Vendor added")}
+    closeDrawer();
+  }catch(e){btn.disabled=false;btn.textContent="Try again";handleWriteErr(e)}
+}
+function handleWriteErr(e){
+  if(e?.code==="invalid_argument"){S.canWrite=false;render();showBanner("You have view-only access to this register. Ask the owner for Contributor access to add or edit vendors.");closeDrawer()}
+  else if(e?.code==="quota_exceeded")toast("The register is full. Delete old vendors to add new ones.");
+  else toast("Couldn't save. Check your connection and try again.");
+}
+function showBanner(t){const b=$("banner");b.textContent=t;b.hidden=false}
+
+async function delVendor(id){
+  try{await S.db.collection("vendors").doc(id).delete();closeDrawer();toast("Vendor deleted")}catch(e){handleWriteErr(e)}
+}
+async function loadSamples(){
+  if(!S.db)return;
+  try{for(const s of SAMPLES){await S.db.collection("vendors").add({...s,createdAt:new Date().toISOString()})}toast("Sample vendors loaded")}catch(e){handleWriteErr(e)}
+}
+async function clearSamples(){
+  try{for(const v of S.vendors.filter(v=>v.sample)){await S.db.collection("vendors").doc(v.id).delete()}toast("Samples removed")}catch(e){handleWriteErr(e)}
+}
+
+function toCSV(rows){
+  const cols=[["name","Vendor"],["category","Category"],["materials","Materials"],["status","Status"],["rating","Rating"],["contact","Contact"],["phone","Phone"],["email","Email"],["city","City"],["address","Address"],["gstin","GSTIN"],["pan","PAN"],["terms","Payment terms"],["lastPo","Last PO"],["notes","Notes"]];
+  const q=s=>{s=String(s??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
+  return [cols.map(c=>c[1]).join(","),...rows.map(r=>cols.map(c=>q(r[c[0]])).join(","))].join("\r\n");
+}
+async function exportCSV(){
+  try{const dl=await claude.use("downloads");if(!dl)return;
+    await dl.save({filename:`alcove-vendors-${new Date().toISOString().slice(0,10)}.csv`,data:"﻿"+toCSV(filtered())});
+  }catch(e){if(e?.code!=="cancelled"&&e?.code!=="declined")toast("Export didn't complete.")}
+}
+
+/* events */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-act],[data-id],[data-sort],[data-status],[data-rate],[data-copy]");if(!t)return;
+  if(t.dataset.copy!==undefined){const txt=t.dataset.copy;navigator.clipboard?.writeText(txt).then(()=>toast("Copied")).catch(()=>toast(txt));return}
+  if(t.dataset.rate!==undefined){S.drawer.rating=+t.dataset.rate;document.querySelectorAll("#ratepick [data-rate]").forEach(b=>{const n=+b.dataset.rate;if(n)b.classList.toggle("on",n<=S.drawer.rating)});return}
+  if(t.dataset.sort){S.dir=S.sort===t.dataset.sort?-S.dir:1;S.sort=t.dataset.sort;render();return}
+  if(t.classList.contains("stat")){S.status=t.dataset.status===S.status?"":t.dataset.status;render();return}
+  const a=t.dataset.act;
+  if(a==="close")closeDrawer();
+  else if(a==="add")openForm();
+  else if(a==="edit")openForm(S.drawer.id);
+  else if(a==="save")save();
+  else if(a==="samples")loadSamples();
+  else if(a==="clearSamples")clearSamples();
+  else if(a==="clear"){S.q=S.cat=S.status=S.city="";$("q").value="";fillSelects();render()}
+  else if(a==="askDelete"){const v=S.vendors.find(x=>x.id===S.drawer.id);$("confirmBox").innerHTML=`<div class="confirm"><p>Delete <strong>${esc(v.name)}</strong> from the register? This removes it for everyone.</p><div style="display:flex;gap:8px"><button class="btn danger" data-act="doDelete">Delete vendor</button><button class="btn" data-act="noDelete">Keep</button></div></div>`}
+  else if(a==="noDelete")$("confirmBox").innerHTML="";
+  else if(a==="doDelete")delVendor(S.drawer.id);
+  else if(t.dataset.id)openDetail(t.dataset.id);
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&S.drawer)closeDrawer();
+  if(e.key==="Enter"&&e.target.matches("tbody tr[data-id]"))openDetail(e.target.dataset.id);
+  if(e.key==="Enter"&&e.target.closest("#vform")&&e.target.tagName==="INPUT"){e.preventDefault();save()}
+});
+$("vform")?.addEventListener("submit",e=>e.preventDefault());
+document.addEventListener("submit",e=>{e.preventDefault()});
+$("addBtn").onclick=()=>openForm();
+$("exportBtn").onclick=exportCSV;
+let qT;$("q").addEventListener("input",e=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=e.target.value;render()},120)});
+$("fCat").onchange=e=>{S.cat=e.target.value;render()};
+$("fStatus").onchange=e=>{S.status=e.target.value;render()};
+$("fCity").onchange=e=>{S.city=e.target.value;render()};
+fillSelects();
+
+/* standalone fallback (outside claude.ai): vendors kept in this browser's localStorage */
+function localDB(){
+  const KEY="alcove-vendors-v1",subs=new Set();
+  const read=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch{return {}}};
+  const write=o=>{try{localStorage.setItem(KEY,JSON.stringify(o))}catch{throw {code:"unavailable"}}emit()};
+  const snap=()=>{const o=read();return {docs:Object.keys(o).map(id=>({id,exists:true,data:()=>o[id]}))}};
+  const emit=()=>subs.forEach(fn=>fn(snap()));
+  window.addEventListener("storage",e=>{if(e.key===KEY)emit()});
+  const docRef=id=>({id,async set(d){const o=read();o[id]=d;write(o)},async delete(){const o=read();delete o[id];write(o)}});
+  const col={doc:id=>docRef(id||("v"+Date.now().toString(36)+Math.random().toString(36).slice(2,7))),
+    async add(d){const r=col.doc();await r.set(d);return r},
+    onSnapshot(fn){subs.add(fn);setTimeout(()=>fn(snap()));return()=>subs.delete(fn)}};
+  return {collection:()=>col};
+}
+const browserDownloads={async save({filename,data}){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"text/csv"}));a.download=filename;document.body.appendChild(a);a.click();a.remove()}};
+const hasClaude=typeof window.claude?.use==="function";
+if(!hasClaude)window.claude={use:async n=>n==="downloads"?browserDownloads:null};
+
+/* boot */
+(async()=>{
+  const [db,user,dl]=hasClaude?await Promise.all([claude.use("db"),claude.use("user"),claude.use("downloads")]):[localDB(),null,browserDownloads];
+  if(!hasClaude)showBanner("Standalone mode: vendors are saved in this browser only. Use Export CSV to back up or share the list.");
+  if(dl)$("exportBtn").hidden=false;
+  if(!db){
+    S.loaded=true;S.canWrite=false;
+    $("list").innerHTML=`<div class="empty"><h3>Sign in to see the vendor register</h3><p>The register is stored with this page. Open it while signed in to Claude to view and add vendors.</p></div>`;
+    return;
+  }
+  S.db=db;
+  if(user){const w=await user.can("data.write");if(w===false){S.canWrite=false;showBanner("You have view-only access. Ask the owner for Contributor access to add or edit vendors.")}}
+  db.collection("vendors").onSnapshot(snap=>{
+    S.vendors=snap.docs.map(d=>({id:d.id,...d.data()}));S.loaded=true;fillSelects();render();
+    if(S.drawer?.mode==="view"){S.vendors.some(v=>v.id===S.drawer.id)?openDetail(S.drawer.id):closeDrawer()}
+  },err=>{S.loaded=true;$("list").innerHTML=`<div class="empty"><h3>The register couldn't load</h3><p>Reload the page to try again.</p></div>`});
+  render();
+})();
+</script>
+
+</body>
+</html>
