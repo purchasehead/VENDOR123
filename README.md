@@ -16,3 +16,17 @@ In standalone mode the list is stored in each browser's local storage, so it is 
 
 - `index.html` – standalone page
 - `vendor-portal.html` – same page, artifact source (no document skeleton)
+
+---
+
+# Material Rate Analysis
+
+`rate-analysis/index.html` – month-wise purchase rates of construction materials by vendor.
+
+- Summary of all materials: latest average rate, change vs previous month and vs period start, price range, trend sparkline, L1 (lowest) vendor.
+- Key findings: steepest rise, biggest drop, widest vendor price gap.
+- Per-material trend chart (one line per vendor, hover for rates) and month × vendor grid; click any cell to add or edit a rate.
+- Period filter (from / to month) and Export CSV.
+- Opens with sample NCR rates (Apr–Sep 2026), marked as samples; remove them and enter your own.
+
+With GitHub Pages enabled it is served at `/VENDOR123/rate-analysis/`. Standalone mode stores rates in the browser only; `rate-analysis.html` is the claude.ai artifact source.

@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+<title>Material Rate Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: report header + period → findings → all-materials summary table → selected material: headline, trend chart, month × vendor grid */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --surface-2:#e9eeec; --line:#d5dddb; --grid:#e4e9e7;
+  --ink:#16302b; --ink-2:#4c615c; --ink-3:#7a8b87;
+  --accent:#b8741a; --accent-ink:#ffffff; --accent-soft:#f6e8d3;
+  --up:#b23a3a; --up-soft:#f6dcdc; --down:#2e7d4f; --down-soft:#dcefe3;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+  --font-display:"Familjen Grotesk","Segoe UI",system-ui,sans-serif;
+  --font-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --radius:8px; --shadow:0 12px 40px rgba(16,40,35,.18);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1715; --surface:#16211e; --surface-2:#1d2a27; --line:#2b3a36; --grid:#22302c;
+  --ink:#e4ece9; --ink-2:#a9bab5; --ink-3:#768a85;
+  --accent:#e0a04a; --accent-ink:#1a1206; --accent-soft:#3a2c17;
+  --up:#ef8a8a; --up-soft:#3b1f1f; --down:#6cc790; --down-soft:#1d3426;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1715; --surface:#16211e; --surface-2:#1d2a27; --line:#2b3a36; --grid:#22302c;
+  --ink:#e4ece9; --ink-2:#a9bab5; --ink-3:#768a85;
+  --accent:#e0a04a; --accent-ink:#1a1206; --accent-soft:#3a2c17;
+  --up:#ef8a8a; --up-soft:#3b1f1f; --down:#6cc790; --down-soft:#1d3426;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:flex;flex-direction:column;gap:22px}
+@media (max-width:520px){.wrap{padding-inline:16px}}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:2px solid var(--ink)}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.head h1{font-size:clamp(26px,4vw,36px);font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.head p{margin:4px 0 0;color:var(--ink-2);max-width:62ch}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.ctl{display:flex;flex-direction:column;gap:2px}
+.ctl label{font-size:11px;font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+select,.f input{padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);max-width:100%}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:var(--radius);cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--up);border-color:var(--up)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.banner{background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 14px;font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sample-tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:2px}
+
+.findings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:860px){.findings{grid-template-columns:1fr}}
+.finding{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.finding .k{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.finding .v{font-family:var(--font-display);font-size:19px;font-weight:600;line-height:1.25}
+.finding .s{font-size:13.5px;color:var(--ink-2)}
+
+.delta{display:inline-flex;align-items:center;gap:3px;font-weight:600;font-size:13px;padding:1px 7px;border-radius:99px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.delta.up{color:var(--up);background:var(--up-soft)}
+.delta.down{color:var(--down);background:var(--down-soft)}
+.delta.flat{color:var(--ink-2);background:var(--surface-2)}
+
+.sec-title{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sec-title h2{font-size:20px}
+.sec-title .note{font-size:13px;color:var(--ink-3)}
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+#sumTable{min-width:860px}
+th{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:500;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+th.r,td.r{text-align:right}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+#sumTable tbody tr{cursor:pointer}
+#sumTable tbody tr:hover td{background:var(--surface-2)}
+#sumTable tbody tr.sel td{background:var(--accent-soft)}
+#sumTable tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.mname{font-weight:600}
+.unit{font-size:13px;color:var(--ink-3)}
+
+.detail{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.dhead{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.dhead h2{font-size:24px}
+.hero{display:flex;gap:28px;flex-wrap:wrap}
+.hero .big{font-family:var(--font-display);font-size:34px;font-weight:600;line-height:1}
+.hero .lbl{font-size:13px;color:var(--ink-3);margin-top:4px}
+.hero > div{display:flex;flex-direction:column;gap:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.chartbox{position:relative;min-width:0}
+.chartbox svg{display:block;width:100%;overflow:visible}
+.chartbox text{font-family:var(--font-body);font-size:12px;fill:var(--ink-3)}
+.chartbox .dl{font-size:12.5px;fill:var(--ink-2);font-weight:600}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:6px;padding:8px 10px;font-size:13px;min-width:180px;z-index:3}
+.tip .t{font-weight:600;margin-bottom:4px}
+.tip .row{display:flex;justify-content:space-between;gap:14px;align-items:center}
+.tip .row span:first-child{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+.tip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.grid td.cell{text-align:right}
+.cellbtn{border:0;background:none;padding:2px 4px;border-radius:4px;cursor:pointer;font-variant-numeric:tabular-nums;color:var(--ink)}
+.cellbtn:hover{background:var(--surface-2)}
+.cellbtn.empty{color:var(--ink-3)}
+.l1{font-size:11px;font-weight:700;color:var(--down);margin-left:4px}
+.spark path.a{fill:var(--accent-soft)}
+.spark path.l{fill:none;stroke:var(--accent);stroke-width:1.5}
+.spark circle{fill:var(--accent)}
+
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius);padding:40px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.empty p{margin:0;color:var(--ink-2);max-width:54ch}
+.empty .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+
+.scrim{position:fixed;inset:0;background:rgba(10,20,18,.45);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--surface);z-index:21;box-shadow:var(--shadow);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.drawer-head h2{font-size:20px}
+.drawer-body{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.drawer-foot{display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;border-top:1px solid var(--line)}
+.drawer-foot .r{display:flex;gap:8px;margin-left:auto}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:13px;font-weight:600;color:var(--ink-2)}
+.f input,.f select{width:100%;background:var(--bg)}
+.f .err{font-size:12px;color:var(--up)}
+.f .hint{font-size:12px;color:var(--ink-3)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.confirm{background:var(--up-soft);border:1px solid var(--up);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.confirm p{margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--radius);font-weight:600;z-index:30;box-shadow:var(--shadow)}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div>
+      <div class="eyebrow">Alcove Realty · Purchase Department</div>
+      <h1>Material Rate Analysis</h1>
+      <p>Month-wise purchase rates by vendor, with change over the period, lowest-rate (L1) vendor and price range for each material. Rates exclude GST.</p>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="from">From</label><select id="from"></select></div>
+      <div class="ctl"><label for="to">To</label><select id="to"></select></div>
+      <button class="btn" id="exportBtn" hidden>Export CSV</button>
+      <button class="btn primary" id="addBtn">+ Add rate</button>
+    </div>
+  </header>
+
+  <div id="banner"></div>
+  <div id="report"><div class="empty"><h3>Loading rates…</h3><p>Fetching the rates saved by your team.</p></div></div>
+</div>
+<div id="drawerRoot"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* Sample rates, Apr–Sep 2026, NCR market. Clearly marked as samples in the UI. */
+const SAMPLES=[
+ {id:"cement-opc53",name:"Cement OPC 53 grade",unit:"bag (50 kg)",sample:true,rates:[
+  {vendor:"Shree Balaji Cement Traders",r:{"2026-04":385,"2026-05":388,"2026-06":392,"2026-07":400,"2026-08":398,"2026-09":405}},
+  {vendor:"Gupta Building Supplies",r:{"2026-04":390,"2026-05":390,"2026-06":395,"2026-07":404,"2026-08":402,"2026-09":410}},
+  {vendor:"Om Sai Traders",r:{"2026-04":380,"2026-05":384,"2026-06":390,"2026-07":398,"2026-08":400,"2026-09":402}}]},
+ {id:"tmt-fe550d",name:"TMT bar Fe 550D (8–32 mm)",unit:"MT",sample:true,rates:[
+  {vendor:"Shiv Shakti Steels",r:{"2026-04":56800,"2026-05":57400,"2026-06":58200,"2026-07":59500,"2026-08":58900,"2026-09":58300}},
+  {vendor:"Agarwal Iron Traders",r:{"2026-04":57200,"2026-05":57600,"2026-06":58800,"2026-07":59900,"2026-08":59400,"2026-09":58700}}]},
+ {id:"rmc-m25",name:"RMC M25 (with pump)",unit:"cum",sample:true,rates:[
+  {vendor:"NCR Ready Mix",r:{"2026-04":5250,"2026-05":5250,"2026-06":5300,"2026-07":5350,"2026-08":5400,"2026-09":5400}},
+  {vendor:"Delhi Concrete Co",r:{"2026-04":5180,"2026-05":5220,"2026-06":5280,"2026-07":5380,"2026-08":5380,"2026-09":5450}},
+  {vendor:"Haryana Concrete Works",r:{"2026-04":5300,"2026-05":5300,"2026-06":5320,"2026-07":5360,"2026-08":5420,"2026-09":5460}}]},
+ {id:"aggregate-20mm",name:"Coarse aggregate 20 mm",unit:"MT",sample:true,rates:[
+  {vendor:"Aravali Stone Suppliers",r:{"2026-04":1150,"2026-05":1150,"2026-06":1220,"2026-07":1280,"2026-08":1300,"2026-09":1260}},
+  {vendor:"Yamuna Mining Traders",r:{"2026-04":1120,"2026-05":1160,"2026-06":1240,"2026-07":1300,"2026-08":1310,"2026-09":1290}}]},
+ {id:"msand",name:"M-sand (plaster grade)",unit:"MT",sample:true,rates:[
+  {vendor:"Aravali Stone Suppliers",r:{"2026-04":1380,"2026-05":1420,"2026-06":1480,"2026-07":1560,"2026-08":1590,"2026-09":1540}},
+  {vendor:"Om Sai Traders",r:{"2026-04":1400,"2026-05":1430,"2026-06":1500,"2026-07":1580,"2026-08":1600,"2026-09":1570}}]},
+ {id:"aac-blocks",name:"AAC blocks 600×200×150",unit:"cum",sample:true,rates:[
+  {vendor:"Gupta Building Supplies",r:{"2026-04":3950,"2026-05":3950,"2026-06":3900,"2026-07":3900,"2026-08":3850,"2026-09":3880}},
+  {vendor:"Shree Balaji Cement Traders",r:{"2026-04":4000,"2026-05":3980,"2026-06":3950,"2026-07":3920,"2026-08":3900,"2026-09":3900}}]},
+ {id:"binding-wire",name:"Binding wire 18 SWG",unit:"kg",sample:true,rates:[
+  {vendor:"Shiv Shakti Steels",r:{"2026-04":78,"2026-05":78,"2026-06":80,"2026-07":82,"2026-08":82,"2026-09":81}},
+  {vendor:"Agarwal Iron Traders",r:{"2026-04":79,"2026-05":80,"2026-06":80,"2026-07":83,"2026-08":84,"2026-09":82}}]}
+];
+
+const S={mats:[],from:"",to:"",sel:"",db:null,canWrite:true,loaded:false,drawer:null};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr=n=>n==null||isNaN(n)?"—":"₹"+Number(n).toLocaleString("en-IN",{maximumFractionDigits:n<1000?2:0});
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const mLabel=m=>{const [y,mm]=m.split("-");return `${MON[+mm-1]} ${y}`};
+const mShort=m=>{const [y,mm]=m.split("-");return `${MON[+mm-1]} ’${y.slice(2)}`};
+const avg=a=>{const v=a.filter(x=>x!=null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null};
+const pct=(a,b)=>a==null||b==null||!b?null:(a-b)/b*100;
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"m"+Date.now();
+const color=i=>`var(--s${(i%8)+1})`;
+function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2400)}
+function delta(p,suffix=""){if(p==null)return `<span class="delta flat">—</span>`;const c=Math.abs(p)<0.05?"flat":p>0?"up":"down";const ar=c==="up"?"▲":c==="down"?"▼":"■";return `<span class="delta ${c}" title="${c==="up"?"Rate increased":c==="down"?"Rate decreased":"No change"}">${ar} ${Math.abs(p).toFixed(1)}%${suffix}</span>`}
+
+/* derived data */
+function allMonths(){const s=new Set();S.mats.forEach(m=>(m.rates||[]).forEach(v=>Object.keys(v.r||{}).forEach(k=>s.add(k))));return [...s].sort()}
+function period(){return allMonths().filter(m=>(!S.from||m>=S.from)&&(!S.to||m<=S.to))}
+function analyse(mat,months){
+  const vendors=(mat.rates||[]).map((v,i)=>({name:v.vendor,i,vals:months.map(m=>v.r?.[m]??null)}));
+  const avgs=months.map((_,k)=>avg(vendors.map(v=>v.vals[k])));
+  const idx=avgs.map((a,k)=>a!=null?k:-1).filter(k=>k>=0);
+  const lastK=idx.length?idx[idx.length-1]:-1,prevK=idx.length>1?idx[idx.length-2]:-1,firstK=idx.length?idx[0]:-1;
+  const all=vendors.flatMap(v=>v.vals).filter(x=>x!=null);
+  let l1=null;if(lastK>=0){vendors.forEach(v=>{const x=v.vals[lastK];if(x!=null&&(!l1||x<l1.rate))l1={vendor:v.name,rate:x}})}
+  const spread=lastK>=0?(()=>{const xs=vendors.map(v=>v.vals[lastK]).filter(x=>x!=null);return xs.length>1?(Math.max(...xs)-Math.min(...xs))/Math.min(...xs)*100:null})():null;
+  return {vendors,avgs,lastK,latest:lastK>=0?avgs[lastK]:null,latestMonth:lastK>=0?months[lastK]:null,
+    mom:prevK>=0?pct(avgs[lastK],avgs[prevK]):null,since:firstK>=0&&lastK>firstK?pct(avgs[lastK],avgs[firstK]):null,
+    firstMonth:firstK>=0?months[firstK]:null,min:all.length?Math.min(...all):null,max:all.length?Math.max(...all):null,l1,spread};
+}
+
+/* sparkline */
+function spark(vals){
+  const w=96,h=26,p=2,xs=vals.map((v,i)=>[i,v]).filter(d=>d[1]!=null);if(xs.length<2)return "";
+  const lo=Math.min(...xs.map(d=>d[1])),hi=Math.max(...xs.map(d=>d[1])),n=vals.length-1||1;
+  const X=i=>p+i/n*(w-2*p),Y=v=>hi===lo?h/2:h-p-(v-lo)/(hi-lo)*(h-2*p);
+  const line=xs.map((d,k)=>`${k?"L":"M"}${X(d[0]).toFixed(1)},${Y(d[1]).toFixed(1)}`).join("");
+  const area=line+`L${X(xs.at(-1)[0]).toFixed(1)},${h}L${X(xs[0][0]).toFixed(1)},${h}Z`;const e=xs.at(-1);
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path class="a" d="${area}"/><path class="l" d="${line}"/><circle cx="${X(e[0])}" cy="${Y(e[1])}" r="2.5"/></svg>`;
+}
+
+/* main chart */
+function niceTicks(lo,hi,n=5){const span=hi-lo||Math.abs(hi)||1,raw=span/n,mag=10**Math.floor(Math.log10(raw)),st=[1,2,2.5,5,10].map(x=>x*mag).find(x=>x>=raw);const a=Math.floor(lo/st)*st,b=Math.ceil(hi/st)*st,t=[];for(let v=a;v<=b+st/2;v+=st)t.push(+v.toFixed(6));return t}
+function drawChart(box,months,A){
+  const W=box.clientWidth||700,narrow=W<560,H=narrow?240:300;
+  const showDL=!narrow&&A.vendors.length<=4;
+  const m={l:narrow?52:64,r:showDL?150:14,t:12,b:28};
+  const vals=A.vendors.flatMap(v=>v.vals).filter(x=>x!=null);
+  if(!vals.length){box.innerHTML=`<p class="unit">No rates in this period.</p>`;return}
+  let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo||hi*.05)*.15;const ticks=niceTicks(lo-pad,hi+pad);lo=ticks[0];hi=ticks.at(-1);
+  const iw=W-m.l-m.r,ih=H-m.t-m.b,n=months.length;
+  const X=k=>m.l+(n<=1?iw/2:k/(n-1)*iw),Y=v=>m.t+ih-(v-lo)/(hi-lo)*ih;
+  const fmtT=v=>v>=100000?"₹"+(v/100000).toFixed(1)+"L":v>=1000?"₹"+(v/1000).toLocaleString("en-IN",{maximumFractionDigits:1})+"k":"₹"+v;
+  let s=`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Monthly rate by vendor">`;
+  ticks.forEach(t=>{s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--grid)" stroke-width="1"/><text x="${m.l-8}" y="${Y(t)+4}" text-anchor="end">${fmtT(t)}</text>`});
+  const every=Math.ceil(n/(narrow?4:8));
+  months.forEach((mm,k)=>{if(k%every===0||k===n-1)s+=`<text x="${X(k)}" y="${H-8}" text-anchor="middle">${mShort(mm)}</text>`});
+  s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${m.t+ih}" y2="${m.t+ih}" stroke="var(--line)"/>`;
+  s+=`<line id="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t+ih}" stroke="var(--ink-3)" stroke-dasharray="3 3" visibility="hidden"/>`;
+  const labels=[];
+  A.vendors.forEach(v=>{
+    let d="",pen=false;v.vals.forEach((x,k)=>{if(x==null){pen=false;return}d+=`${pen?"L":"M"}${X(k).toFixed(1)},${Y(x).toFixed(1)}`;pen=true});
+    s+=`<path d="${d}" fill="none" stroke="${color(v.i)}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    v.vals.forEach((x,k)=>{if(x!=null)s+=`<circle cx="${X(k)}" cy="${Y(x)}" r="4" fill="${color(v.i)}" stroke="var(--surface)" stroke-width="2"/>`});
+    const lk=v.vals.map((x,k)=>x!=null?k:-1).filter(k=>k>=0).at(-1);if(lk!=null)labels.push({y:Y(v.vals[lk]),x:X(lk),name:v.name,i:v.i});
+  });
+  if(showDL){labels.sort((a,b)=>a.y-b.y);for(let k=1;k<labels.length;k++)if(labels[k].y-labels[k-1].y<15)labels[k].y=labels[k-1].y+15;
+    labels.forEach(l=>{const nm=l.name.length>22?l.name.slice(0,21)+"…":l.name;s+=`<text class="dl" x="${W-m.r+10}" y="${l.y+4}">${esc(nm)}</text>`})}
+  s+=`<rect id="hit" x="${m.l-10}" y="${m.t}" width="${iw+20}" height="${ih}" fill="transparent"/></svg><div class="tip" id="tip" hidden></div>`;
+  box.innerHTML=s;
+  const svg=box.querySelector("svg"),tip=box.querySelector("#tip"),xh=box.querySelector("#xh");
+  const move=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*(W/r.width);let k=n<=1?0:Math.round((px-m.l)/iw*(n-1));k=Math.max(0,Math.min(n-1,k));
+    xh.setAttribute("x1",X(k));xh.setAttribute("x2",X(k));xh.setAttribute("visibility","visible");
+    const rows=A.vendors.map(v=>({v,x:v.vals[k]})).filter(o=>o.x!=null).sort((a,b)=>a.x-b.x);
+    tip.innerHTML=`<div class="t">${mLabel(months[k])}</div>`+(rows.length?rows.map((o,j)=>`<div class="row"><span><i style="background:${color(o.v.i)}"></i>${esc(o.v.name)}${j===0&&rows.length>1?'<b class="l1">L1</b>':""}</span><span class="num">${inr(o.x)}</span></div>`).join(""):`<div class="unit">No rates</div>`)+(rows.length>1?`<div class="row" style="border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><span>Average</span><span class="num">${inr(A.avgs[k])}</span></div>`:"");
+    tip.hidden=false;const bx=X(k)/W*r.width,tw=tip.offsetWidth;tip.style.left=Math.min(Math.max(0,bx+12+tw>r.width?bx-tw-12:bx+12),r.width-tw)+"px";tip.style.top="8px"};
+  const hide=()=>{tip.hidden=true;xh.setAttribute("visibility","hidden")};
+  svg.addEventListener("pointermove",move);svg.addEventListener("pointerleave",hide);
+}
+
+/* render */
+function render(){
+  $("addBtn").hidden=!S.canWrite;
+  const rep=$("report");if(!S.loaded)return;
+  const ms=allMonths();
+  const opt=(sel)=>ms.map(m=>`<option value="${m}" ${m===sel?"selected":""}>${mLabel(m)}</option>`).join("");
+  if(S.from&&!ms.includes(S.from))S.from="";if(S.to&&!ms.includes(S.to))S.to="";
+  $("from").innerHTML=opt(S.from||ms[0]);$("to").innerHTML=opt(S.to||ms.at(-1));
+  const hasSamples=S.mats.some(m=>m.sample);
+  $("banner").innerHTML=hasSamples?`<div class="banner"><span>Showing <span class="sample-tag" style="margin:0">sample</span> NCR market rates for illustration. Replace them with your own purchase rates.</span>${S.canWrite?`<button class="btn" data-act="clearSamples">Remove sample rates</button>`:""}</div>`:(S.bannerText?`<div class="banner">${esc(S.bannerText)}</div>`:"");
+  if(!S.mats.length){rep.innerHTML=`<div class="empty"><h3>No rates recorded yet</h3><p>Add the rate you paid for a material in a month, vendor by vendor. The report then shows month-on-month change, the L1 vendor and the price range for each material.</p><div class="row">${S.canWrite?`<button class="btn primary" data-act="add">+ Add first rate</button><button class="btn" data-act="samples">Load sample rates</button>`:""}</div></div>`;return}
+  const months=period();
+  const rows=S.mats.map(m=>({m,A:analyse(m,months)})).sort((a,b)=>a.m.name.localeCompare(b.m.name));
+  if(!S.sel||!S.mats.some(m=>m.id===S.sel))S.sel=rows[0].m.id;
+
+  const withSince=rows.filter(r=>r.A.since!=null);
+  const up=withSince.slice().sort((a,b)=>b.A.since-a.A.since)[0],dn=withSince.slice().sort((a,b)=>a.A.since-b.A.since)[0];
+  const sp=rows.filter(r=>r.A.spread!=null).sort((a,b)=>b.A.spread-a.A.spread)[0];
+  const rng=months.length?`${mLabel(months[0])} – ${mLabel(months.at(-1))}`:"";
+  const fd=(k,v,s)=>`<div class="finding"><span class="k">${k}</span><span class="v">${v}</span><span class="s">${s}</span></div>`;
+  const findings=`<section class="findings" aria-label="Key findings">
+    ${up&&up.A.since>0?fd("Steepest rise",esc(up.m.name),`${delta(up.A.since)} since ${mLabel(up.A.firstMonth)}, now ${inr(up.A.latest)} per ${esc(up.m.unit)} (avg)`):fd("Steepest rise","No increases","No material got costlier over this period.")}
+    ${dn&&dn.A.since<0?fd("Biggest drop",esc(dn.m.name),`${delta(dn.A.since)} since ${mLabel(dn.A.firstMonth)}, now ${inr(dn.A.latest)} per ${esc(dn.m.unit)} (avg)`):fd("Biggest drop","No decreases","No material got cheaper over this period.")}
+    ${sp?fd("Widest vendor gap",esc(sp.m.name),`${sp.A.spread.toFixed(1)}% between highest and L1 in ${mLabel(sp.A.latestMonth)}. L1: ${esc(sp.A.l1.vendor)} at ${inr(sp.A.l1.rate)}`):fd("Widest vendor gap","Needs 2+ vendors","Add rates from more than one vendor to compare.")}
+  </section>`;
+
+  const table=`<section style="display:flex;flex-direction:column;gap:10px"><div class="sec-title"><h2>All materials</h2><span class="note">${rng} · averages across vendors · click a row for detail</span></div>
+  <div class="tablebox"><table id="sumTable"><thead><tr><th>Material</th><th class="r">Latest avg rate</th><th class="r">vs prev. month</th><th class="r">vs period start</th><th class="r">Range in period</th><th>Trend</th><th>L1 vendor (latest)</th></tr></thead><tbody>
+  ${rows.map(({m,A})=>`<tr data-mat="${esc(m.id)}" class="${m.id===S.sel?"sel":""}" tabindex="0">
+    <td><div class="mname">${esc(m.name)}${m.sample?'<span class="sample-tag">sample</span>':""}</div><div class="unit">per ${esc(m.unit)}</div></td>
+    <td class="r num"><b>${inr(A.latest)}</b><div class="unit">${A.latestMonth?mShort(A.latestMonth):""}</div></td>
+    <td class="r">${delta(A.mom)}</td><td class="r">${delta(A.since)}</td>
+    <td class="r num">${A.min!=null?`${inr(A.min)} – ${inr(A.max)}`:"—"}</td>
+    <td>${spark(A.avgs)}</td>
+    <td>${A.l1?`${esc(A.l1.vendor)}<div class="unit num">${inr(A.l1.rate)}</div>`:"—"}</td></tr>`).join("")}
+  </tbody></table></div></section>`;
+
+  const cur=rows.find(r=>r.m.id===S.sel),M=cur.m,A=cur.A;
+  const detail=`<section class="detail" aria-label="Material detail">
+    <div class="dhead"><div><div class="eyebrow">Rate per ${esc(M.unit)} · excl. GST</div><h2>${esc(M.name)}</h2></div>
+      ${S.canWrite?`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="addFor">+ Add rate</button><button class="btn danger" data-act="askDelMat">Delete material</button></div>`:""}</div>
+    <div id="matConfirm"></div>
+    <div class="hero">
+      <div><span class="big num">${inr(A.latest)}</span><span class="lbl">Average rate, ${A.latestMonth?mLabel(A.latestMonth):"—"}</span></div>
+      <div><span>${delta(A.mom)}</span><span class="lbl">vs previous month</span></div>
+      <div><span>${delta(A.since)}</span><span class="lbl">since ${A.firstMonth?mLabel(A.firstMonth):"—"}</span></div>
+      <div><span class="big num" style="font-size:22px">${A.l1?inr(A.l1.rate):"—"}</span><span class="lbl">L1: ${A.l1?esc(A.l1.vendor):"—"}</span></div>
+    </div>
+    ${A.vendors.length>1?`<div class="legend">${A.vendors.map(v=>`<span><i style="background:${color(v.i)}"></i>${esc(v.name)}</span>`).join("")}</div>`:""}
+    <div class="chartbox" id="chart"></div>
+    <div class="tablebox"><table class="grid"><thead><tr><th>Month</th>${A.vendors.map(v=>`<th class="r">${esc(v.name)}</th>`).join("")}<th class="r">Average</th><th class="r">MoM</th></tr></thead><tbody>
+    ${months.map((mm,k)=>{const xs=A.vendors.map(v=>v.vals[k]).filter(x=>x!=null),mn=xs.length>1?Math.min(...xs):null;const pk=A.avgs.slice(0,k).map((a,j)=>a!=null?j:-1).filter(j=>j>=0).at(-1);
+      return `<tr><td class="num">${mLabel(mm)}</td>${A.vendors.map(v=>{const x=v.vals[k];const inner=x!=null?`${inr(x)}${x===mn?'<span class="l1">L1</span>':""}`:"—";
+        return `<td class="cell">${S.canWrite?`<button class="cellbtn ${x==null?"empty":""}" data-edit="${esc(v.name)}|${mm}" aria-label="${x!=null?"Edit":"Add"} ${esc(v.name)} rate for ${mLabel(mm)}">${inner}</button>`:inner}</td>`}).join("")}
+        <td class="r num"><b>${inr(A.avgs[k])}</b></td><td class="r">${A.avgs[k]!=null&&pk!=null?delta(pct(A.avgs[k],A.avgs[pk])):""}</td></tr>`}).join("")}
+    </tbody></table></div>
+  </section>`;
+  rep.innerHTML=`<div style="display:flex;flex-direction:column;gap:22px">${findings}${table}${detail}</div>`;
+  drawChart($("chart"),months,A);
+}
+
+/* drawer: add / edit rate */
+function closeDrawer(){S.drawer=null;$("drawerRoot").innerHTML=""}
+function openForm(o={}){
+  const mat=S.mats.find(m=>m.id===o.mat);
+  const ms=allMonths();const month=o.month||(ms.length?ms.at(-1):new Date().toISOString().slice(0,7));
+  const existing=mat&&o.vendor?mat.rates.find(v=>v.vendor===o.vendor)?.r?.[month]:null;
+  S.drawer={editing:existing!=null,orig:existing!=null?{mat:o.mat,vendor:o.vendor,month}:null};
+  const vendorsAll=[...new Set(S.mats.flatMap(m=>m.rates.map(v=>v.vendor)))].sort();
+  $("drawerRoot").innerHTML=`<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="Rate entry">
+   <div class="drawer-head"><h2>${existing!=null?"Edit rate":"Add rate"}</h2><button class="btn ghost" data-act="close" aria-label="Close">✕</button></div>
+   <form class="drawer-body" id="rform" novalidate>
+    <div class="f"><label for="r_mat">Material</label><select id="r_mat">${S.mats.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(m=>`<option value="${esc(m.id)}" ${m.id===o.mat?"selected":""}>${esc(m.name)} (per ${esc(m.unit)})</option>`).join("")}<option value="__new" ${!S.mats.length?"selected":""}>+ New material…</option></select></div>
+    <div class="two" id="newMat" ${S.mats.length?"hidden":""}>
+      <div class="f"><label for="r_name">Material name</label><input id="r_name" placeholder="e.g. Cement PPC"><span class="err" id="e_name"></span></div>
+      <div class="f"><label for="r_unit">Unit</label><input id="r_unit" list="units" placeholder="e.g. bag (50 kg)"><datalist id="units"><option>bag (50 kg)</option><option>MT</option><option>cum</option><option>sqm</option><option>kg</option><option>nos</option><option>rmt</option><option>litre</option></datalist><span class="err" id="e_unit"></span></div>
+    </div>
+    <div class="f"><label for="r_vendor">Vendor</label><input id="r_vendor" list="vlist" value="${esc(o.vendor||"")}" placeholder="Vendor name"><datalist id="vlist">${vendorsAll.map(v=>`<option>${esc(v)}</option>`).join("")}</datalist><span class="err" id="e_vendor"></span></div>
+    <div class="two">
+      <div class="f"><label for="r_month">Month</label><input id="r_month" type="month" value="${month}"><span class="err" id="e_month"></span></div>
+      <div class="f"><label for="r_rate">Rate (₹, excl. GST)</label><input id="r_rate" type="number" min="0" step="0.01" inputmode="decimal" value="${existing??""}"><span class="err" id="e_rate"></span></div>
+    </div>
+    <span class="hint">Saving a rate for a vendor and month that already has one replaces it.</span>
+    <div id="delBox"></div>
+   </form>
+   <div class="drawer-foot">${existing!=null?`<button class="btn danger" data-act="askDelRate">Delete rate</button>`:""}<div class="r"><button class="btn" data-act="close">Cancel</button><button class="btn primary" id="saveBtn" data-act="save">${existing!=null?"Save":"Add rate"}</button></div></div>
+  </aside>`;
+  $("r_mat").onchange=e=>{$("newMat").hidden=e.target.value!=="__new"};
+  (o.vendor?$("r_rate"):$("r_vendor")).focus();
+}
+async function writeMat(doc){const {id,...body}=doc;await S.db.collection("materials").doc(id).set(body)}
+async function saveRate(){
+  const g=id=>$(id).value.trim();document.querySelectorAll("#rform .err").forEach(e=>e.textContent="");
+  let matId=g("r_mat");const vendor=g("r_vendor"),month=g("r_month"),rate=parseFloat(g("r_rate"));const err={};
+  let name,unit;if(matId==="__new"){name=g("r_name");unit=g("r_unit");if(!name)err.name="Enter the material name.";if(!unit)err.unit="Enter the unit, e.g. MT.";
+    if(name&&S.mats.some(m=>m.name.toLowerCase()===name.toLowerCase()))err.name="This material already exists. Pick it from the list."}
+  if(!vendor)err.vendor="Enter the vendor name.";
+  if(!/^\d{4}-\d{2}$/.test(month))err.month="Pick a month.";
+  if(!(rate>0))err.rate="Enter a rate above zero.";
+  if(Object.keys(err).length){for(const k in err)$("e_"+k).textContent=err[k];return}
+  let doc=matId==="__new"?{id:slug(name),name,unit,sample:false,rates:[]}:structuredClone(S.mats.find(m=>m.id===matId));
+  if(matId==="__new"&&S.mats.some(m=>m.id===doc.id))doc.id+="-"+Date.now().toString(36);
+  const o=S.drawer.orig;
+  if(o&&o.mat===doc.id&&(o.vendor!==vendor||o.month!==month)){const ov=doc.rates.find(v=>v.vendor===o.vendor);if(ov){delete ov.r[o.month];if(!Object.keys(ov.r).length)doc.rates=doc.rates.filter(v=>v!==ov)}}
+  let v=doc.rates.find(x=>x.vendor.toLowerCase()===vendor.toLowerCase());if(!v){v={vendor,r:{}};doc.rates.push(v)}
+  v.r[month]=rate;doc.sample=false;
+  const b=$("saveBtn");b.disabled=true;b.textContent="Saving…";
+  try{await writeMat(doc);S.sel=doc.id;toast(o?"Rate updated":"Rate added");closeDrawer()}catch(e){b.disabled=false;b.textContent="Try again";writeErr(e)}
+}
+async function deleteRate(){
+  const o=S.drawer.orig,doc=structuredClone(S.mats.find(m=>m.id===o.mat));const v=doc.rates.find(x=>x.vendor===o.vendor);
+  delete v.r[o.month];if(!Object.keys(v.r).length)doc.rates=doc.rates.filter(x=>x!==v);
+  try{await writeMat(doc);toast("Rate deleted");closeDrawer()}catch(e){writeErr(e)}
+}
+function writeErr(e){
+  if(e?.code==="invalid_argument"){S.canWrite=false;S.bannerText="You have view-only access. Ask the owner for Contributor access to add or edit rates.";closeDrawer();render()}
+  else if(e?.code==="quota_exceeded")toast("Storage is full. Delete old materials to add more.");
+  else toast("Couldn't save. Check your connection and try again.");
+}
+async function loadSamples(){try{for(const s of SAMPLES)await writeMat(structuredClone(s));toast("Sample rates loaded")}catch(e){writeErr(e)}}
+async function clearSamples(){try{for(const m of S.mats.filter(m=>m.sample))await S.db.collection("materials").doc(m.id).delete();toast("Sample rates removed")}catch(e){writeErr(e)}}
+
+function toCSV(){
+  const months=period(),q=s=>{s=String(s??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
+  const out=[["Material","Unit","Month","Vendor","Rate (INR, excl. GST)"].join(",")];
+  S.mats.forEach(m=>m.rates.forEach(v=>months.forEach(mm=>{if(v.r[mm]!=null)out.push([m.name,m.unit,mm,v.vendor,v.r[mm]].map(q).join(","))})));
+  return out.join("\r\n");
+}
+async function exportCSV(){try{const dl=await claude.use("downloads");if(dl)await dl.save({filename:`alcove-rate-analysis-${new Date().toISOString().slice(0,10)}.csv`,data:"﻿"+toCSV()})}catch(e){}}
+
+/* events */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-act],[data-mat],[data-edit]");if(!t)return;
+  if(t.dataset.edit){const [vendor,month]=t.dataset.edit.split("|");openForm({mat:S.sel,vendor,month});return}
+  if(t.dataset.mat){S.sel=t.dataset.mat;render();return}
+  const a=t.dataset.act;
+  if(a==="close")closeDrawer();
+  else if(a==="add")openForm({});
+  else if(a==="addFor")openForm({mat:S.sel});
+  else if(a==="save")saveRate();
+  else if(a==="samples")loadSamples();
+  else if(a==="clearSamples")clearSamples();
+  else if(a==="askDelRate")$("delBox").innerHTML=`<div class="confirm"><p>Delete this rate? It is removed for everyone.</p><div style="display:flex;gap:8px"><button type="button" class="btn danger" data-act="doDelRate">Delete rate</button><button type="button" class="btn" data-act="noDel">Keep</button></div></div>`;
+  else if(a==="noDel")$("delBox").innerHTML="";
+  else if(a==="doDelRate")deleteRate();
+  else if(a==="askDelMat"){const m=S.mats.find(x=>x.id===S.sel);$("matConfirm").innerHTML=`<div class="confirm"><p>Delete <b>${esc(m.name)}</b> and all its rates? This removes it for everyone.</p><div style="display:flex;gap:8px"><button class="btn danger" data-act="doDelMat">Delete material</button><button class="btn" data-act="noDelMat">Keep</button></div></div>`}
+  else if(a==="noDelMat")$("matConfirm").innerHTML="";
+  else if(a==="doDelMat")S.db.collection("materials").doc(S.sel).delete().then(()=>{S.sel="";toast("Material deleted")},writeErr);
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&S.drawer)closeDrawer();
+  if(e.key==="Enter"&&e.target.matches("tr[data-mat]")){S.sel=e.target.dataset.mat;render()}
+  if(e.key==="Enter"&&e.target.closest("#rform")&&e.target.tagName==="INPUT"){e.preventDefault();saveRate()}
+});
+document.addEventListener("submit",e=>e.preventDefault());
+$("addBtn").onclick=()=>openForm({mat:S.sel});
+$("exportBtn").onclick=exportCSV;
+$("from").onchange=e=>{S.from=e.target.value;if(S.to&&S.to<S.from)S.to=S.from;render()};
+$("to").onchange=e=>{S.to=e.target.value;if(S.from&&S.from>S.to)S.from=S.to;render()};
+let rz;window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{if(S.loaded&&S.mats.length)render()},150)});
+
+/* standalone fallback (outside claude.ai): rates kept in this browser's localStorage, samples on first visit */
+function localDB(){
+  const KEY="alcove-rates-v1",subs=new Set();
+  const read=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch{return {}}};
+  const write=o=>{try{localStorage.setItem(KEY,JSON.stringify(o))}catch{throw {code:"unavailable"}}emit()};
+  try{if(!localStorage.getItem(KEY+"-init")){const o={};SAMPLES.forEach(({id,...b})=>o[id]=b);localStorage.setItem(KEY,JSON.stringify(o));localStorage.setItem(KEY+"-init","1")}}catch{}
+  const snap=()=>{const o=read();return {docs:Object.keys(o).map(id=>({id,data:()=>o[id]}))}};
+  const emit=()=>subs.forEach(fn=>fn(snap()));
+  window.addEventListener("storage",e=>{if(e.key===KEY)emit()});
+  const col={doc:id=>({id,async set(d){const o=read();o[id]=d;write(o)},async delete(){const o=read();delete o[id];write(o)}}),
+    onSnapshot(fn){subs.add(fn);setTimeout(()=>fn(snap()));return()=>subs.delete(fn)}};
+  return {collection:()=>col};
+}
+const browserDownloads={async save({filename,data}){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"text/csv"}));a.download=filename;document.body.appendChild(a);a.click();a.remove()}};
+const hasClaude=typeof window.claude?.use==="function";
+if(!hasClaude)window.claude={use:async n=>n==="downloads"?browserDownloads:null};
+
+/* boot */
+(async()=>{
+  const [db,user,dl]=hasClaude?await Promise.all([claude.use("db"),claude.use("user"),claude.use("downloads")]):[localDB(),null,browserDownloads];
+  if(!hasClaude)S.bannerText="Standalone mode: rates are saved in this browser only. Use Export CSV to back up or share.";
+  if(dl)$("exportBtn").hidden=false;
+  if(!db){S.loaded=true;S.canWrite=false;$("addBtn").hidden=true;$("report").innerHTML=`<div class="empty"><h3>Sign in to see the rate analysis</h3><p>Rates are stored with this page. Open it while signed in to Claude to view and add rates.</p></div>`;return}
+  S.db=db;
+  if(user){const w=await user.can("data.write");if(w===false){S.canWrite=false;S.bannerText="You have view-only access. Ask the owner for Contributor access to add or edit rates."}}
+  db.collection("materials").onSnapshot(snap=>{
+    S.mats=snap.docs.map(d=>{const b=d.data();return {id:d.id,name:b.name||d.id,unit:b.unit||"unit",sample:!!b.sample,rates:Array.isArray(b.rates)?b.rates:[]}});
+    S.loaded=true;render();
+  },()=>{S.loaded=true;$("report").innerHTML=`<div class="empty"><h3>The rates couldn't load</h3><p>Reload the page to try again.</p></div>`});
+})();
+</script>
+
+</body>
+</html>
